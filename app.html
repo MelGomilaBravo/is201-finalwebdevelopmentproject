@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Web App | Joke + Riddle Generator</title>
+  <style>
+    body { font-family: Arial, Helvetica, sans-serif; background: #fff0f7; margin: 0; color: #222; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 20px; }
+    .nav { background: #fff; padding: 12px; border-radius: 10px; margin-bottom: 18px; }
+    .nav a { color: crimson; text-decoration: none; margin-right: 8px; }
+    .nav a:hover { text-decoration: underline; }
+    .card { background:#fff; border:1px solid #ffd1e7; border-radius: 14px; padding: 16px; margin: 16px 0; }
+    button { padding: 10px 12px; border: none; border-radius: 10px; cursor: pointer; }
+    button:hover { opacity: 0.9; }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    select, input { padding: 10px; border-radius: 10px; border: 1px solid #ffd1e7; }
+    .box { padding: 14px; border-radius: 12px; background: #fff7fb; border: 1px dashed #ff9ac7; }
+    .small { font-size: 14px; color: #7a2a53; }
+    ul { padding-left: 18px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="nav">
+      <a href="index.html">Home</a> |
+      <a href="resume.html">Resume</a> |
+      <a href="aboutme.html">About Me</a> |
+      <a href="scratch.html">Scratch</a> |
+      <a href="app.html">My Web App</a>
+    </div>
+
+    <h1>Joke + Riddle Generator</h1>
+    <p class="small">This page is a single-file web app (HTML + CSS + JS together).</p>
+
+    <div class="card">
+      <div class="row">
+        <label for="mode"><strong>Mode:</strong></label>
+        <select id="mode">
+          <option value="joke">Jokes</option>
+          <option value="riddle">Riddles</option>
+        </select>
+
+        <label for="category"><strong>Category:</strong></label>
+        <select id="category">
+          <option value="school">School</option>
+          <option value="design">Design</option>
+          <option value="random">Random</option>
+        </select>
+
+        <button id="btnGenerate">Generate</button>
+        <button id="btnCopy">Copy</button>
+        <button id="btnFav">★ Favorite</button>
+      </div>
+
+      <div style="margin-top:12px;" class="box">
+        <div id="promptText"><em>Click “Generate” to get started.</em></div>
+        <div id="answerText" style="margin-top:10px;"></div>
+      </div>
+
+      <p class="small" id="status"></p>
+    </div>
+
+    <div class="card">
+      <h2>Favorites</h2>
+      <p class="small">Saved in your browser using localStorage.</p>
+      <ul id="favList"></ul>
+      <button id="btnClear">Clear Favorites</button>
+    </div>
+  </div>
+
+  <script>
+    const data = {
+      joke: {
+        school: [
+          "Why did the student eat their homework? | Because the teacher said it was a piece of cake.",
+          "Why did the math book look sad? | It had too many problems."
+        ],
+        design: [
+          "Why did the designer bring a ladder? | To reach the high-resolution.",
+          "Why was the font tired? | It had been working in bold all day."
+        ],
+        random: [
+          "I told my computer I needed a break… | Now it won’t stop sending me KitKat ads.",
+          "Why don’t programmers like nature? | Too many bugs."
+        ]
+      },
+      riddle: {
+        school: [
+          "I have pages but I’m not a book. I have answers but I’m not a teacher. What am I? | A test.",
+          "What has a head and a tail but no body? | A coin."
+        ],
+        design: [
+          "I can be cropped, resized, and filtered, but I’m not food. What am I? | An image.",
+          "I’m invisible, but I control how things line up. What am I? | A grid."
+        ],
+        random: [
+          "What gets wetter the more it dries? | A towel.",
+          "What can travel around the world while staying in the same corner? | A stamp."
+        ]
+      }
+    };
+
+    const modeEl = document.getElementById("mode");
+    const catEl = document.getElementById("category");
+    const promptEl = document.getElementById("promptText");
+    const answerEl = document.getElementById("answerText");
+    const statusEl = document.getElementById("status");
+    const favListEl = document.getElementById("favList");
+
+    function getFavorites() {
+      return JSON.parse(localStorage.getItem("mg_favs") || "[]");
+    }
+    function setFavorites(list) {
+      localStorage.setItem("mg_favs", JSON.stringify(list));
+      renderFavorites();
+    }
+    function renderFavorites() {
+      const favs = getFavorites();
+      favListEl.innerHTML = "";
+      if (favs.length === 0) {
+        favListEl.innerHTML = "<li class='small'><em>No favorites yet.</em></li>";
+        return;
+      }
+      favs.forEach((item, idx) => {
+        const li = document.createElement("li");
+        li.innerHTML = `${item} <button data-i="${idx}" style="margin-left:8px;">Remove</button>`;
+        favListEl.appendChild(li);
+      });
+
+      favListEl.querySelectorAll("button").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const i = Number(btn.getAttribute("data-i"));
+          const updated = getFavorites();
+          updated.splice(i, 1);
+          setFavorites(updated);
+        });
+      });
+    }
+
+    function generate() {
+      const mode = modeEl.value;
+      const cat = catEl.value;
+      const items = data[mode][cat];
+      const pick = items[Math.floor(Math.random() * items.length)];
+      const [q, a] = pick.split(" | ");
+      promptEl.textContent = q;
+      answerEl.textContent = mode === "riddle" ? ("Answer: " + a) : a;
+      statusEl.textContent = "Generated!";
+    }
+
+    async function copyText() {
+      const text = `${promptEl.textContent}\n${answerEl.textContent}`.trim();
+      try {
+        await navigator.clipboard.writeText(text);
+        statusEl.textContent = "Copied to clipboard ✅";
+      } catch {
+        statusEl.textContent = "Copy failed (browser permission).";
+      }
+    }
+
+    function favorite() {
+      const item = `${modeEl.value.toUpperCase()} (${catEl.value}): ${promptEl.textContent} ${answerEl.textContent}`.trim();
+      const favs = getFavorites();
+      if (!favs.includes(item)) {
+        favs.unshift(item);
+        setFavorites(favs);
+        statusEl.textContent = "Saved to favorites ★";
+      } else {
+        statusEl.textContent = "Already in favorites.";
+      }
+    }
+
+    document.getElementById("btnGenerate").addEventListener("click", generate);
+    document.getElementById("btnCopy").addEventListener("click", copyText);
+    document.getElementById("btnFav").addEventListener("click", favorite);
+    document.getElementById("btnClear").addEventListener("click", () => setFavorites([]));
+
+    renderFavorites();
+  </script>
+</body>
+</html>
